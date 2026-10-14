@@ -20,11 +20,11 @@ def get_issued():
     p = get_payload()
     if not p: return jsonify({'error':'Unauthorized'}), 401
     if p['role'] == 'admin':
-        rows = query("""SELECT i.*,b.title,b.author,u.name as student_name,u.member_id
+        rows = query("""SELECT i.*,b.title,b.author,b.isbn,b.cover_url,b.description,u.name as student_name,u.member_id
                         FROM issued_books i JOIN books b ON i.book_id=b.id
                         JOIN users u ON i.user_id=u.id ORDER BY i.issued_date DESC""", fetch=True)
     else:
-        rows = query("""SELECT i.*,b.title,b.author,b.cover_url
+        rows = query("""SELECT i.*,b.title,b.author,b.isbn,b.cover_url,b.description
                         FROM issued_books i JOIN books b ON i.book_id=b.id
                         WHERE i.user_id=%s ORDER BY i.issued_date DESC""",
                      (p['user_id'],), fetch=True)
@@ -134,7 +134,7 @@ def return_book_self(iid):
 def overdue():
     p = get_payload()
     if not p or p['role'] != 'admin': return jsonify({'error':'Unauthorized'}), 401
-    rows = query("""SELECT i.*,b.title,u.name as student_name,u.member_id,u.email,u.phone,
+    rows = query("""SELECT i.*,b.title,b.author,b.isbn,b.cover_url,b.description,u.name as student_name,u.member_id,u.email,u.phone,
                            DATEDIFF(CURDATE(),i.due_date) as overdue_days
                     FROM issued_books i JOIN books b ON i.book_id=b.id
                     JOIN users u ON i.user_id=u.id
@@ -146,7 +146,7 @@ def overdue():
 def who_has_books():
     p = get_payload()
     if not p or p['role'] != 'admin': return jsonify({'error':'Unauthorized'}), 401
-    rows = query("""SELECT i.*,b.title,b.author,u.name as student_name,u.member_id,u.phone
+    rows = query("""SELECT i.*,b.title,b.author,b.isbn,b.cover_url,b.description,u.name as student_name,u.member_id,u.phone
                     FROM issued_books i JOIN books b ON i.book_id=b.id
                     JOIN users u ON i.user_id=u.id
                     WHERE i.status='issued' ORDER BY i.issued_date DESC""", fetch=True)
