@@ -1,6 +1,15 @@
 """Central config, read from environment variables (see .env.example)."""
 import os
 
+# Load backend/.env (KEY=value per line) so you don't have to set variables in every terminal
+_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.isfile(_env):
+    for _line in open(_env, encoding='utf-8'):
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _v = _line.split('=', 1)
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 SECRET = os.environ.get("LMS_SECRET", "change-me-in-production")
 
 DB_CONFIG = {
