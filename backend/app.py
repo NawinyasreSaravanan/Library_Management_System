@@ -51,7 +51,9 @@ def generate_qr():
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
-FRONTEND = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
+FRONTEND = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'frontend')
+)
 
 @app.route('/')
 def index():
