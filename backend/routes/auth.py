@@ -65,7 +65,7 @@ def register():
 def profile():
     p = get_payload()
     if not p: return jsonify({'error': 'Unauthorized'}), 401
-    user = query("SELECT id,name,email,phone,address,role,member_id,created_at FROM users WHERE id=%s",
+    user = query("SELECT id,name,email,phone,address,role,member_id,photo,created_at FROM users WHERE id=%s",
                  (p['user_id'],), fetchone=True)
     return jsonify(user or {})
 
@@ -73,9 +73,20 @@ def profile():
 def update_profile():
     p = get_payload()
     if not p: return jsonify({'error': 'Unauthorized'}), 401
-    d = request.get_json()
-    query("UPDATE users SET name=%s,phone=%s,address=%s WHERE id=%s",
-          (d.get('name'), d.get('phone'), d.get('address'), p['user_id']))
+    d = request.get_json() or {}
+    fields, vals = [], []
+    for k in ('name', 'phone', 'address'):          # only update what was sent
+        if k in d:
+            if k == 'name' and not str(d[k] or '').strip():
+                return jsonify({'error': 'Name cannot be empty'}), 400
+            fields.append(f"{k}=%s"); vals.append(d[k])
+    if 'photo' in d:
+        ph = d['photo']
+        if ph and not (isinstance(ph, str) and ph.startswith('data:image/') and len(ph) < 700_000):
+            return jsonify({'error': 'Photo must be an image under ~500 KB'}), 400
+        fields.append("photo=%s"); vals.append(ph or None)
+    if not fields: return jsonify({'error': 'Nothing to update'}), 400
+    query(f"UPDATE users SET {', '.join(fields)} WHERE id=%s", (*vals, p['user_id']))
     return jsonify({'message': 'Profile updated'})
 
 @auth_bp.route('/students', methods=['GET'])

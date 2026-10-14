@@ -27,6 +27,7 @@ CREATE TABLE users (
     address     TEXT,
     member_id   VARCHAR(20) UNIQUE,
     is_active   TINYINT(1) DEFAULT 1,
+    photo       MEDIUMTEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

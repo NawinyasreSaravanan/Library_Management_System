@@ -9,13 +9,7 @@
     <main class="content">
       <!-- Approved card display -->
       <div id="card-display" style="display:none;margin-bottom:24px">
-        <div class="member-card-display" style="max-width:340px">
-          <div style="font-size:11px;opacity:.6;margin-bottom:16px;letter-spacing:1px">LIBRARY MEMBERSHIP CARD</div>
-          <div class="mc-name" id="mc-name"></div>
-          <div class="mc-id" id="mc-id"></div>
-          <div class="mc-plan" id="mc-plan"></div>
-          <div class="mc-valid" id="mc-valid" style="margin-top:8px"></div>
-        </div>
+        <div id="mc-holder"></div>
       </div>
 
       <!-- Pending status -->
@@ -89,10 +83,9 @@
     if (m && m.status === 'approved') {
       document.getElementById('card-display').style.display = 'block';
       document.getElementById('apply-display').style.display = 'none';
-      document.getElementById('mc-name').textContent  = user?.name || '';
-      document.getElementById('mc-id').textContent    = user?.member_id || '';
-      document.getElementById('mc-plan').textContent  = m.plan?.toUpperCase() + ' MEMBER';
-      document.getElementById('mc-valid').textContent = `Valid till: ${formatDate(m.end_date)}`;
+      const pr = await apiFetch('/auth/profile');
+      document.getElementById('mc-holder').innerHTML = memberCardHtml({
+        ...m, name: pr?.data?.name || user?.name, member_id: pr?.data?.member_id || user?.member_id, photo: pr?.data?.photo });
     } else if (m && m.status === 'pending') {
       document.getElementById('pending-display').style.display = 'block';
     }

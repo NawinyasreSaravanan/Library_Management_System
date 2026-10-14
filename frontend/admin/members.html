@@ -44,14 +44,14 @@
     if (!pending.length) ptbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No pending approvals</p></div></td></tr>';
     else ptbody.innerHTML = pending.map(m => `
       <tr>
-        <td><strong>${m.name}</strong><br><small>${m.member_id} &bull; ${m.email}</small></td>
+        <td><a class="name-link" title="View membership card" onclick="showMemberCard(${m.user_id})"><strong>${esc(m.name)}</strong></a><br><small>${esc(m.member_id)} &bull; ${esc(m.email)}</small></td>
         <td><span class="badge badge-purple">${m.plan}</span></td>
         <td>Rs.${m.amount}</td>
         <td>${m.txn_id||'—'}</td>
         <td>${formatDate(m.payment_date)}</td>
         <td>
-          <button class="btn btn-success btn-sm" onclick="approve(${m.user_id},'${m.name}')">Approve</button>
-          <button class="btn btn-danger btn-sm" onclick="reject(${m.user_id},'${m.name}')">Reject</button>
+          <button class="btn btn-success btn-sm" onclick="approve(${m.user_id},${esc(JSON.stringify(m.name))})">Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="reject(${m.user_id},${esc(JSON.stringify(m.name))})">Reject</button>
         </td>
       </tr>`).join('');
     const approved = allData.filter(m => m.status !== 'pending');
@@ -59,7 +59,7 @@
     if (!approved.length) atbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No members yet</p></div></td></tr>';
     else atbody.innerHTML = approved.map(m => `
       <tr>
-        <td><strong>${m.name}</strong><br><small>${m.member_id}</small></td>
+        <td><a class="name-link" title="View membership card" onclick="showMemberCard(${m.user_id})"><strong>${esc(m.name)}</strong></a><br><small>${esc(m.member_id)}</small></td>
         <td><span class="badge badge-purple">${m.plan}</span></td>
         <td>Rs.${m.amount}</td>
         <td>${m.txn_id||'—'}</td>

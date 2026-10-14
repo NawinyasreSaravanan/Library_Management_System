@@ -11,6 +11,11 @@
         <div class="card">
           <div class="card-header">Profile Information</div>
           <div class="card-body">
+            <div style="text-align:center;margin-bottom:16px">
+              <div id="avatar-box" style="display:flex;justify-content:center;margin-bottom:8px"></div>
+              <label class="btn btn-outline btn-sm" style="cursor:pointer">Change photo<input type="file" accept="image/*" hidden onchange="uploadPhoto(this, load)"></label>
+              <button class="btn btn-ghost btn-sm" onclick="removePhoto(load)">Remove</button>
+            </div>
             <div class="form-row">
               <div class="form-group"><label>Full Name</label><input type="text" id="f-name"></div>
               <div class="form-group"><label>Phone</label><input type="text" id="f-phone"></div>
@@ -29,15 +34,6 @@
             <button class="btn btn-warning" onclick="changePassword()">Change Password</button>
           </div>
         </div>
-        <div class="card">
-          <div class="card-header">Admin Credentials (Shared with Staff)</div>
-          <div class="card-body">
-            <div style="background:#f8fafc;border-radius:8px;padding:16px;font-family:monospace;font-size:13px">
-              <div>Email: <strong>admin@library.com</strong></div>
-              <div style="margin-top:6px">Password: <strong>Library@2024</strong> (change after setup)</div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   </div>
@@ -52,6 +48,7 @@
     document.getElementById('f-phone').value   = r.data.phone||'';
     document.getElementById('f-email').value   = r.data.email||'';
     document.getElementById('f-address').value = r.data.address||'';
+    document.getElementById('avatar-box').innerHTML = avatarHtml(r.data.name, r.data.photo, 84);
   }
   async function updateProfile() {
     const r = await apiFetch('/auth/profile', { method:'PUT', body:JSON.stringify({

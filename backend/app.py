@@ -66,6 +66,8 @@ def serve_frontend(filename):
 
 @app.after_request
 def after_request(response):
+    if not request.path.startswith('/api'):
+        response.headers['Cache-Control'] = 'no-cache'   # always re-check html/js/css
     response.headers['Access-Control-Allow-Origin']  = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'

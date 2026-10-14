@@ -275,3 +275,98 @@ function bookCell(b) {
       ${b.description ? `<div class="clamp-2" style="font-size:12px;color:var(--muted);max-width:320px">${esc(b.description)}</div>` : ''}
     </div></div>`;
 }
+
+// ── Avatars / profile photo ───────────────────────────────────────────────
+function avatarHtml(name, photo, size = 64) {
+  const inner = photo ? `<img src="${esc(photo)}" alt="">` : esc((name || '?').trim()[0]?.toUpperCase() || '?');
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size/2.6)}px">${inner}</div>`;
+}
+
+// Crop to a centred square, shrink to 256px, return a small JPEG data URL
+function pickPhoto(file, size = 256) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) return reject(new Error('Please choose an image file'));
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('Could not read the file'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That image could not be opened'));
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = c.height = size;
+        const s = Math.min(img.width, img.height);
+        c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+async function uploadPhoto(input, reload) {
+  try {
+    const photo = await pickPhoto(input.files[0]);
+    const r = await apiFetch('/auth/profile', { method: 'PUT', body: JSON.stringify({ photo }) });
+    if (r?.ok) { showToast('Photo updated!', 'success'); reload && reload(); }
+    else showToast(r?.data?.error || 'Could not save photo', 'error');
+  } catch (e) { showToast(e.message, 'error'); }
+  input.value = '';
+}
+async function removePhoto(reload) {
+  const r = await apiFetch('/auth/profile', { method: 'PUT', body: JSON.stringify({ photo: null }) });
+  if (r?.ok) { showToast('Photo removed', 'info'); reload && reload(); }
+}
+
+// ── Membership card (used by student page + admin "click a name") ─────────
+function memberCardHtml(i) {
+  const today  = new Date().toISOString().slice(0, 10);
+  const status = i.status || 'none';
+  const active = status === 'approved' && (!i.end_date || i.end_date >= today);
+  const label  = active ? `${String(i.plan || '').toUpperCase()} MEMBER`
+               : status === 'approved' ? 'EXPIRED'
+               : status === 'pending'  ? 'PENDING APPROVAL'
+               : status === 'rejected' ? 'REJECTED' : 'NO MEMBERSHIP';
+  const photo  = i.photo ? `<img src="${esc(i.photo)}" alt="">` : esc((i.name || '?')[0].toUpperCase());
+  return `<div class="member-card-display ${active ? '' : 'mc-inactive'}" style="max-width:380px">
+    <div style="font-size:11px;opacity:.7;margin-bottom:14px;letter-spacing:1px">LIBRARY MEMBERSHIP CARD</div>
+    <div style="display:flex;gap:14px;align-items:center">
+      <div class="mc-photo">${photo}</div>
+      <div><div class="mc-name">${esc(i.name)}</div><div class="mc-id" style="margin-bottom:0">${esc(i.member_id)}</div></div>
+    </div>
+    <div style="margin-top:16px"><span class="mc-plan">${label}</span></div>
+    <div class="mc-valid">${i.start_date ? `Valid: ${formatDate(i.start_date)} – ${formatDate(i.end_date)}` : 'No validity period'}</div>
+  </div>`;
+}
+
+// Admin: click a student's name → modal with their membership card + details
+async function showMemberCard(uid) {
+  let m = document.getElementById('mc-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'mc-modal'; m.className = 'modal-overlay';
+    m.onclick = e => { if (e.target === m) closeModal('mc-modal'); };
+    m.innerHTML = `<div class="modal"><div class="modal-header"><span>Membership Card</span>
+      <button class="close-btn" onclick="closeModal('mc-modal')">&times;</button></div>
+      <div class="modal-body" id="mc-modal-body"></div></div>`;
+    document.body.appendChild(m);
+  }
+  const body = document.getElementById('mc-modal-body');
+  body.innerHTML = '<p style="text-align:center;color:var(--muted)">Loading…</p>';
+  openModal('mc-modal');
+  const r = await apiFetch(`/membership/user/${uid}`);
+  if (!r?.ok) { body.innerHTML = `<p style="text-align:center;color:var(--danger)">${esc(r?.data?.error || 'Could not load')}</p>`; return; }
+  const d = r.data, row = (k, v) => v ? `<tr><td style="color:var(--muted);padding:4px 12px 4px 0">${k}</td><td>${esc(v)}</td></tr>` : '';
+  body.innerHTML = `<div style="display:flex;justify-content:center">${memberCardHtml(d)}</div>
+    <table style="margin-top:18px;font-size:13px;width:auto">
+      ${row('Email', d.email)}${row('Phone', d.phone)}${row('Joined', formatDate(d.created_at))}
+      ${d.plan ? row('Plan', d.plan) + row('Amount', 'Rs.' + d.amount) + row('Txn ID', d.txn_id) : ''}
+    </table>`;
+}
+
+// Keep the sidebar scroll position when moving between pages
+(function () {
+  const el = document.getElementById('sidebar');
+  if (!el) return;
+  try { el.scrollTop = parseInt(sessionStorage.getItem('lms_side_scroll') || '0', 10); } catch {}
+  el.addEventListener('click', () => { try { sessionStorage.setItem('lms_side_scroll', el.scrollTop); } catch {} });
+})();

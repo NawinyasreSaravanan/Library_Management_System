@@ -36,6 +36,7 @@ def init_db():
         cur.close()
         conn.close()
         print("Database connected successfully")
+        ensure_columns()
         ensure_admin()
         print("student_feedback table ready")
     except Error as e:
@@ -100,3 +101,12 @@ def ensure_admin():
                  VALUES ('Library Admin',%s,%s,'admin','ADMIN001')""",
               (ADMIN_EMAIL.lower(), hashed))
         print(f"Default admin created: {ADMIN_EMAIL}")
+
+
+def ensure_columns():
+    """Add columns introduced after the first version (safe to run every start)."""
+    row = query("""SELECT COUNT(*) AS c FROM information_schema.COLUMNS
+                   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='photo'""", fetchone=True)
+    if row['c'] == 0:
+        query("ALTER TABLE users ADD COLUMN photo MEDIUMTEXT NULL")
+        print("Added users.photo column")

@@ -89,3 +89,22 @@ def reject(uid):
              VALUES (%s,'Membership Rejected',%s,'warning')""",
           (uid, d.get('reason','Your membership application was rejected. Please contact the library.')))
     return jsonify({'message':'Membership rejected'})
+
+
+@membership_bp.route('/user/<int:uid>', methods=['GET'])
+def user_card(uid):
+    """Admin: membership card + profile photo of one student (works even with no card)."""
+    p = get_payload()
+    if not p or p['role'] != 'admin': return jsonify({'error':'Unauthorized'}), 401
+    u = query("SELECT id,name,email,phone,member_id,photo,created_at FROM users WHERE id=%s AND role='student'",
+              (uid,), fetchone=True)
+    if not u: return jsonify({'error':'Student not found'}), 404
+    m = query("SELECT * FROM membership_cards WHERE user_id=%s", (uid,), fetchone=True) or {}
+    return jsonify({**u,
+        'status'      : m.get('status', 'none'),
+        'plan'        : m.get('plan'),
+        'amount'      : m.get('amount'),
+        'txn_id'      : m.get('txn_id'),
+        'payment_date': m.get('payment_date'),
+        'start_date'  : m.get('start_date'),
+        'end_date'    : m.get('end_date')})

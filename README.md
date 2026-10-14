@@ -20,3 +20,6 @@ Flask + MySQL backend serving a plain HTML/JS frontend.
 ## Dummy data
 `cd backend && python seed.py` adds 8 students (password `Student@123`, e.g. `arun@student.com`), 20 books, 3 events, approved memberships and some borrow records (incl. overdue). Safe to re-run.
 Students need an **approved membership** to borrow; `sneha@student.com` is pending and `vignesh@student.com` has none, so you can test the approval flow from the admin panel.
+
+## Updating an existing install
+After pulling new code, restart `python app.py` (it adds any new database columns automatically) and hard-refresh the browser (Ctrl+F5).

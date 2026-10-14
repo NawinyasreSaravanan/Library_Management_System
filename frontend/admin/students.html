@@ -37,12 +37,12 @@
     if (!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>No students found</p></div></td></tr>'; return; }
     tbody.innerHTML = data.map(s => `
       <tr>
-        <td><strong>${s.name}</strong></td>
+        <td><a class="name-link" title="View membership card" onclick="showMemberCard(${s.id})"><strong>${esc(s.name)}</strong></a></td>
         <td><span class="badge badge-info">${s.member_id||'—'}</span></td>
         <td>${s.email}</td>
         <td>${s.phone||'—'}</td>
         <td>${formatDate(s.created_at)}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="sendMsg(${s.id},'${s.name}')">Send Notification</button></td>
+        <td><button class="btn btn-outline btn-sm" onclick="sendMsg(${s.id},${esc(JSON.stringify(s.name))})">Send Notification</button></td>
       </tr>`).join('');
   }
   function filterStudents() {
