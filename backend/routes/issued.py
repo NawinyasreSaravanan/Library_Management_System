@@ -6,6 +6,8 @@ from db import query
 issued_bp = Blueprint('issued', __name__)
 from config import SECRET
 FINE_PER_DAY = 10.00
+MEMBER_LIMIT     = 3   # active books for approved members
+NON_MEMBER_LIMIT = 1   # active books without a membership
 
 def get_payload():
     auth = request.headers.get('Authorization','')
@@ -60,13 +62,17 @@ def borrow_book():
     book_id = d.get('book_id')
     if not book_id:
         return jsonify({'error':'Book is required'}), 400
-    member = query("SELECT status FROM membership_cards WHERE user_id=%s", (p['user_id'],), fetchone=True)
-    if not member or member['status'] != 'approved':
-        return jsonify({'error':'Active membership is required to borrow books'}), 400
+    member = query("SELECT status,end_date FROM membership_cards WHERE user_id=%s", (p['user_id'],), fetchone=True)
+    is_member = bool(member and member['status'] == 'approved' and
+                     (not member['end_date'] or str(member['end_date']) >= str(datetime.date.today())))
+    limit  = MEMBER_LIMIT if is_member else NON_MEMBER_LIMIT
     active = query("""SELECT COUNT(*) as c FROM issued_books
                       WHERE user_id=%s AND status='issued'""", (p['user_id'],), fetchone=True)
-    if (active['c'] or 0) >= 3:
-        return jsonify({'error':'Borrow limit reached (max 3 active books)'}), 400
+    if (active['c'] or 0) >= limit:
+        if is_member:
+            return jsonify({'error':f'Borrow limit reached (max {MEMBER_LIMIT} active books)'}), 400
+        return jsonify({'error':f'Without a membership you can borrow only {NON_MEMBER_LIMIT} book at a time. '
+                                 'Return it or get a membership to borrow up to 3.'}), 400
     book = query("SELECT available,title FROM books WHERE id=%s", (book_id,), fetchone=True)
     if not book or book['available'] < 1:
         return jsonify({'error':'Book not available'}), 400
