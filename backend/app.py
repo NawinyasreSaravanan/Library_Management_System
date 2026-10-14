@@ -37,6 +37,16 @@ app.register_blueprint(feedback_bp,      url_prefix='/api/feedback')
 def health():
     return {'status': 'ok', 'message': 'LMS API running'}
 
+@app.route('/api/debug-frontend')
+def debug_frontend():
+    return {
+        'frontend_path': FRONTEND,
+        'frontend_folder_exists': os.path.isdir(FRONTEND),
+        'index_file_exists': os.path.isfile(
+            os.path.join(FRONTEND, 'index.html')
+        ),
+        'working_directory': os.getcwd()
+    }
 @app.route('/api/qr')
 def generate_qr():
     import qrcode
