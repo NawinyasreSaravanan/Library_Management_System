@@ -37,10 +37,11 @@ def issue_book():
     if not book or book['available'] < 1: return jsonify({'error':'Book not available'}), 400
     today    = datetime.date.today()
     due_date = today + datetime.timedelta(days=int(d.get('days',14)))
+    if not query("UPDATE books SET available=available-1 WHERE id=%s AND available>0", (d['book_id'],)):
+        return jsonify({'error':'Book not available'}), 400
     iid = query("""INSERT INTO issued_books (book_id,user_id,issued_date,due_date,status)
                    VALUES (%s,%s,%s,%s,'issued')""",
                 (d['book_id'],d['user_id'],today,due_date), lastrowid=True)
-    query("UPDATE books SET available=available-1 WHERE id=%s", (d['book_id'],))
     # Notify student
     student = query("SELECT name FROM users WHERE id=%s", (d['user_id'],), fetchone=True)
     book_info = query("SELECT title FROM books WHERE id=%s", (d['book_id'],), fetchone=True)
@@ -71,9 +72,13 @@ def borrow_book():
         return jsonify({'error':'Book not available'}), 400
     today = datetime.date.today()
     due_date = today + datetime.timedelta(days=14)
+    if not query("UPDATE books SET available=available-1 WHERE id=%s AND available>0", (book_id,)):
+        return jsonify({'error':'Book not available'}), 400
     query("""INSERT INTO issued_books (book_id,user_id,issued_date,due_date,status)
              VALUES (%s,%s,%s,%s,'issued')""", (book_id, p['user_id'], today, due_date))
-    query("UPDATE books SET available=available-1 WHERE id=%s", (book_id,))
+    query("""INSERT INTO notifications (user_id,title,message,type)
+             VALUES (%s,'Book Borrowed',%s,'info')""",
+          (p['user_id'], f"'{book['title']}' borrowed. Due date: {due_date}"))
     return jsonify({'message':'Book borrowed successfully','due_date':str(due_date)}), 201
 
 @issued_bp.route('/return/<int:iid>', methods=['POST'])

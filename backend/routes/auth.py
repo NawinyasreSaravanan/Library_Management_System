@@ -23,9 +23,14 @@ def login():
     d     = request.get_json()
     email = d.get('email','').strip().lower()
     pw    = d.get('password','')
+    portal = d.get('portal', 'student')          # 'student' or 'admin' login page
     user  = query("SELECT * FROM users WHERE email=%s AND is_active=1", (email,), fetchone=True)
     if not user or not bcrypt.checkpw(pw.encode(), user['password'].encode()):
         return jsonify({'error': 'Invalid email or password'}), 401
+    if portal == 'admin' and user['role'] != 'admin':
+        return jsonify({'error': 'This account is not an admin'}), 403
+    if portal != 'admin' and user['role'] == 'admin':
+        return jsonify({'error': 'Admins must sign in from the Admin Login page'}), 403
     token = make_token(user['id'], user['role'])
     return jsonify({'token': token, 'role': user['role'], 'name': user['name'],
                     'member_id': user['member_id'], 'user_id': user['id']})
@@ -39,10 +44,13 @@ def register():
     phone = d.get('phone','')
     if not name or not email or not pw:
         return jsonify({'error': 'Name, email and password required'}), 400
+    if len(pw) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
     hashed = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
     try:
-        count = query("SELECT COUNT(*) as c FROM users", fetchone=True)['c']
-        member_id = f"STU{count+1:04d}"
+        last = query("SELECT MAX(CAST(SUBSTRING(member_id,4) AS UNSIGNED)) AS m FROM users WHERE member_id LIKE 'STU%%'",
+                     fetchone=True)['m'] or 0
+        member_id = f"STU{last+1:04d}"
         uid = query("""INSERT INTO users (name,email,password,phone,role,member_id)
                        VALUES (%s,%s,%s,%s,'student',%s)""",
                     (name, email, hashed, phone, member_id), lastrowid=True)

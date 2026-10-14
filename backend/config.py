@@ -11,3 +11,7 @@ DB_CONFIG = {
     "charset" : "utf8mb4",
     "autocommit": True
 }
+
+# Default admin, created automatically on startup if no admin exists
+ADMIN_EMAIL    = os.environ.get('ADMIN_EMAIL', 'admin@library.com')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Library@2024')

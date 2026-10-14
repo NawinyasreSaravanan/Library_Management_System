@@ -36,6 +36,7 @@ def init_db():
         cur.close()
         conn.close()
         print("Database connected successfully")
+        ensure_admin()
         print("student_feedback table ready")
     except Error as e:
         print(f"Database connection failed: {e}")
@@ -86,3 +87,16 @@ def query(sql, params=None, fetch=False, fetchone=False, lastrowid=False):
     finally:
         if cur:  cur.close()
         if conn: conn.close()
+
+
+def ensure_admin():
+    """Create the default admin account if no admin exists yet."""
+    import bcrypt
+    from config import ADMIN_EMAIL, ADMIN_PASSWORD
+    row = query("SELECT COUNT(*) AS c FROM users WHERE role='admin'", fetchone=True)
+    if row['c'] == 0:
+        hashed = bcrypt.hashpw(ADMIN_PASSWORD.encode(), bcrypt.gensalt()).decode()
+        query("""INSERT INTO users (name,email,password,role,member_id)
+                 VALUES ('Library Admin',%s,%s,'admin','ADMIN001')""",
+              (ADMIN_EMAIL.lower(), hashed))
+        print(f"Default admin created: {ADMIN_EMAIL}")

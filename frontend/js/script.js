@@ -17,7 +17,7 @@ const clearAuth = () => {
 // ── Auth guard ────────────────────────────────────────────────────────────
 function requireAuth(role = null) {
   const token = getToken(), user = getUser();
-  if (!token || !user) { location.href = '/login.html'; return false; }
+  if (!token || !user) { location.href = (role === 'admin' ? '/admin/login.html' : '/login.html'); return false; }
   if (role && user.role !== role) {
     location.href = user.role === 'admin' ? '/admin/dashboard.html' : '/student/dashboard.html';
     return false;
@@ -26,8 +26,9 @@ function requireAuth(role = null) {
 }
 
 function logout() {
+  const u = getUser();
   clearAuth();
-  location.href = '/login.html';
+  location.href = (u && u.role === 'admin') ? '/admin/login.html' : '/login.html';
 }
 
 // ── Fetch wrapper ─────────────────────────────────────────────────────────
@@ -37,7 +38,8 @@ async function apiFetch(endpoint, options = {}) {
       headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${getToken()}` },
       ...options
     });
-    if (res.status === 401) { logout(); return null; }
+    // A 401 on the login endpoints just means wrong credentials, not an expired session
+    if (res.status === 401 && !endpoint.startsWith('/auth/login')) { logout(); return null; }
     // Backend may return non-JSON bodies on 4xx/5xx (e.g. Flask error page).
     // Avoid throwing during `res.json()` so callers can still show a meaningful error.
     let data = null;

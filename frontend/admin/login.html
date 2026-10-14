@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Login — Library LMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-box"><span style="color:#fff;font-weight:700;font-size:16px">LMS</span></div>
+      <h1>Admin Portal</h1>
+      <p>Librarian sign in</p>
+    </div>
+    <div class="form-group">
+      <label>Admin Email</label>
+      <input type="email" id="a-email" placeholder="admin@library.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="a-pw" placeholder="Enter admin password">
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" onclick="doAdminLogin()">Login as Admin</button>
+    <p style="text-align:center;margin-top:16px;font-size:13px"><a href="/login.html">&larr; Student login</a></p>
+  </div>
+</div>
+<script src="/js/script.js"></script>
+<script>
+  const cu = getUser();
+  if (getToken() && cu) {
+    location.href = cu.role === 'admin' ? '/admin/dashboard.html' : '/student/dashboard.html';
+  }
+  async function doAdminLogin() {
+    const email = document.getElementById('a-email').value.trim();
+    const pw    = document.getElementById('a-pw').value;
+    if (!email || !pw) { showToast('Enter email and password', 'warning'); return; }
+    const r = await apiFetch('/auth/login', { method:'POST', body:JSON.stringify({email, password:pw, portal:'admin'}) });
+    if (!r) return;
+    if (!r.ok) { showToast(r.data.error || 'Login failed', 'error'); return; }
+    setAuth(r.data.token, r.data);
+    location.href = '/admin/dashboard.html';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+</script>
+</body>
+</html>
