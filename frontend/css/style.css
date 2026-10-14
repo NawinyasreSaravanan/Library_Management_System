@@ -200,3 +200,27 @@ input:focus,select:focus,textarea:focus { outline:none; border-color:var(--prima
   .search-wrap input { width:100%; }
   .modal { max-width:100%; border-radius:14px 14px 0 0; position:fixed; bottom:0; }
 }
+
+/* ── Book cards (cover + description) ── */
+.book-grid   { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:20px; }
+.book-card   { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; display:flex; flex-direction:column; transition:box-shadow .2s, transform .2s; }
+.book-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.book-cover  { width:100%; aspect-ratio:2/3; border-radius:6px; overflow:hidden; background:#e2e8f0; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); position:relative; }
+.book-cover img { width:100%; height:100%; object-fit:cover; display:block; }
+.book-cover-fallback { width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:14px; color:#fff; }
+.book-cover-fallback .bc-title  { font-family:Georgia,serif; font-weight:700; font-size:15px; line-height:1.25; }
+.book-cover-fallback .bc-author { font-size:11px; margin-top:10px; opacity:.85; }
+.book-info   { flex:1; display:flex; flex-direction:column; margin-top:12px; }
+.book-title  { font-weight:700; font-size:14px; line-height:1.3; cursor:pointer; }
+.book-author { font-size:12px; color:var(--muted); margin:2px 0 6px; }
+.book-desc   { font-size:12px; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:6px 0 10px; }
+.book-foot   { margin-top:auto; }
+.book-thumb  { width:40px; height:58px; border-radius:4px; overflow:hidden; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,.2); background:#e2e8f0; }
+.book-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.book-thumb .book-cover-fallback { padding:3px; }
+.book-thumb .bc-title { font-size:6px; }
+.book-thumb .bc-author { display:none; }
+.clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.book-detail { display:flex; gap:20px; }
+.book-detail .book-cover { width:180px; flex-shrink:0; cursor:default; }
+@media (max-width:560px) { .book-detail { flex-direction:column; align-items:center; } }

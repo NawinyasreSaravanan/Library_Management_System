@@ -189,3 +189,25 @@ function installPWA() {
 
 // Run badge on every page load
 window.addEventListener('load', loadNotifBadge);
+
+// ── Book cover / text helpers ─────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Gradient placeholder shown when a book has no cover image
+function bookFallback(b) {
+  let h = 0; for (const ch of String(b.title || '')) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `<div class="book-cover-fallback" style="background:linear-gradient(160deg,hsl(${h},55%,38%),hsl(${(h+40)%360},60%,24%))">
+    <div class="bc-title">${esc(b.title)}</div><div class="bc-author">${esc(b.author)}</div></div>`;
+}
+
+// Cover image: uses cover_url if set, else Open Library by ISBN, else the placeholder.
+function bookCover(b) {
+  const src = b.cover_url
+    || (b.isbn ? `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(b.isbn)}-L.jpg?default=false` : '');
+  if (!src) return bookFallback(b);
+  const fb = esc(bookFallback(b));   // fully escaped so titles can't inject HTML
+  return `<img src="${esc(src)}" alt="${esc(b.title)}" loading="lazy"
+            onerror="this.parentNode.innerHTML=this.dataset.fb" data-fb="${fb}">`;
+}

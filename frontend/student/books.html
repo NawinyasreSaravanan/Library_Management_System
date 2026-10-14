@@ -27,8 +27,17 @@
         <div class="search-wrap"><span class="search-icon">&#128269;</span><input type="text" id="search" placeholder="Search by title, author..." oninput="debounce(load,400)()"></div>
         <select id="cat" onchange="load()" style="width:160px"><option value="">All Categories</option></select>
       </div>
-      <div id="books-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px"></div>
+      <div id="books-grid" class="book-grid"></div>
     </main>
+  </div>
+</div>
+
+<!-- Book details -->
+<div class="modal-overlay" id="book-modal" onclick="if(event.target===this)closeModal('book-modal')">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span>Book Details</span><button class="close-btn" onclick="closeModal('book-modal')">&times;</button></div>
+    <div class="modal-body" id="book-modal-body"></div>
+    <div class="modal-footer" id="book-modal-foot"></div>
   </div>
 </div>
 <script src="/js/script.js"></script>
@@ -38,35 +47,54 @@
     const r = await apiFetch('/books/categories');
     if (!r?.ok) return;
     const sel = document.getElementById('cat');
-    r.data.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+    r.data.forEach(c => sel.innerHTML += `<option value="${esc(c)}">${esc(c)}</option>`);
   }
+  let BOOKS = [];
   async function load() {
     const search = document.getElementById('search').value;
     const cat    = document.getElementById('cat').value;
     const r = await apiFetch(`/books/?search=${encodeURIComponent(search)}&category=${encodeURIComponent(cat)}`);
     const grid = document.getElementById('books-grid');
     if (!r?.ok) return;
-    if (!r.data.length) { grid.innerHTML='<div class="empty-state"><p>No books found</p></div>'; return; }
-    grid.innerHTML = r.data.map(b => `
-      <div class="card">
-        <div class="card-body">
-          ${b.cover_url ? `<img src="${b.cover_url}" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:12px" onerror="this.style.display='none'">` : ''}
-          <div style="font-weight:700;font-size:14px;margin-bottom:4px">${b.title}</div>
-          <div style="font-size:12px;color:#64748b;margin-bottom:8px">${b.author}</div>
-          ${b.category ? `<span class="badge badge-info" style="margin-bottom:8px">${b.category}</span>` : ''}
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-            <span style="font-size:12px;color:#64748b">${b.available}/${b.total_copies} available</span>
-            <span class="badge badge-${b.available>0?'success':'danger'}">${b.available>0?'Available':'Unavailable'}</span>
+    BOOKS = r.data;
+    if (!BOOKS.length) { grid.innerHTML='<div class="empty-state"><p>No books found</p></div>'; return; }
+    grid.innerHTML = BOOKS.map(b => `
+      <div class="book-card">
+        <div class="book-cover" onclick="showBook(${b.id})">${bookCover(b)}</div>
+        <div class="book-info">
+          <div class="book-title" onclick="showBook(${b.id})">${esc(b.title)}</div>
+          <div class="book-author">by ${esc(b.author)}</div>
+          ${b.category ? `<div><span class="badge badge-info">${esc(b.category)}</span></div>` : ''}
+          <div class="book-desc">${esc(b.description) || 'No description available.'}</div>
+          <div class="book-foot">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${b.available}/${b.total_copies} available</div>
+            <button class="btn btn-primary btn-sm" style="width:100%" onclick="borrowBook(${b.id})" ${b.available>0?'':'disabled'}>${b.available>0?'Borrow':'Unavailable'}</button>
           </div>
-          <div style="margin-top:10px">
-            <button class="btn btn-primary btn-sm" onclick="borrowBook(${b.id},'${b.title.replace(/'/g, "\\'")}')" ${b.available>0?'':'disabled'}>Borrow</button>
-          </div>
-          ${b.description ? `<p style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.5">${b.description}</p>` : ''}
         </div>
       </div>`).join('');
   }
-  async function borrowBook(bookId, title) {
-    if (!confirm(`Borrow "${title}"?`)) return;
+  function showBook(id) {
+    const b = BOOKS.find(x => x.id === id); if (!b) return;
+    document.getElementById('book-modal-body').innerHTML = `
+      <div class="book-detail">
+        <div class="book-cover">${bookCover(b)}</div>
+        <div>
+          <h2 style="font-size:20px;margin-bottom:4px">${esc(b.title)}</h2>
+          <div style="color:var(--muted);margin-bottom:10px">by ${esc(b.author)}</div>
+          ${b.category ? `<span class="badge badge-info">${esc(b.category)}</span>` : ''}
+          <span class="badge badge-${b.available>0?'success':'danger'}">${b.available}/${b.total_copies} available</span>
+          ${b.isbn ? `<div style="font-size:12px;color:var(--muted);margin-top:10px">ISBN: ${esc(b.isbn)}</div>` : ''}
+          <p style="margin-top:14px;line-height:1.7">${esc(b.description) || 'No description available.'}</p>
+        </div>
+      </div>`;
+    document.getElementById('book-modal-foot').innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('book-modal')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('book-modal');borrowBook(${b.id})" ${b.available>0?'':'disabled'}>Borrow</button>`;
+    openModal('book-modal');
+  }
+  async function borrowBook(bookId) {
+    const b = BOOKS.find(x => x.id === bookId);
+    if (!confirm(`Borrow "${b ? b.title : 'this book'}"?`)) return;
     const r = await apiFetch('/issued/borrow', { method:'POST', body:JSON.stringify({ book_id: bookId }) });
     if (r?.ok) {
       showToast(`Borrowed successfully. Due: ${formatDate(r.data.due_date)}`,'success');
